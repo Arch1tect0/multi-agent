@@ -1,0 +1,19 @@
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Multi_Agent", "Multi_Agent.csproj", "{FFCA5E64-6CF4-44C4-8150-97EAB5648729}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+	Debug|Any CPU = Debug|Any CPU
+	ExportDebug|Any CPU = ExportDebug|Any CPU
+	ExportRelease|Any CPU = ExportRelease|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FFCA5E64-6CF4-44C4-8150-97EAB5648729}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FFCA5E64-6CF4-44C4-8150-97EAB5648729}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FFCA5E64-6CF4-44C4-8150-97EAB5648729}.ExportDebug|Any CPU.ActiveCfg = ExportDebug|Any CPU
+		{FFCA5E64-6CF4-44C4-8150-97EAB5648729}.ExportDebug|Any CPU.Build.0 = ExportDebug|Any CPU
+		{FFCA5E64-6CF4-44C4-8150-97EAB5648729}.ExportRelease|Any CPU.ActiveCfg = ExportRelease|Any CPU
+		{FFCA5E64-6CF4-44C4-8150-97EAB5648729}.ExportRelease|Any CPU.Build.0 = ExportRelease|Any CPU
+	EndGlobalSection
+EndGlobal
