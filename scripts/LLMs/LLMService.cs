@@ -3,8 +3,8 @@ using System;
 
 public partial class LLMService : Node
 {
-	[Export] public string ApiKey { get; set; } = "your-api-key-here";
-	[Export] public string Model { get; set; } = "deepseek-chat";
+	public string ApiKey { get; set; } = "sk-b650ad0f84f14c4590d5b4d149c8e66f";
+	public string Model { get; set; } = "deepseek-chat";
 	
 	private const string API_URL = "https://api.deepseek.com/v1/chat/completions";
 	private HttpRequest httpRequest;
@@ -52,27 +52,31 @@ public partial class LLMService : Node
 		httpRequest.Request(API_URL, headers, HttpClient.Method.Post, jsonBody);
 	}
 	
-	private void OnRequestCompleted(long result, long responseCode, string[] headers, byte[] body)
+private void OnRequestCompleted(long result, long responseCode, string[] headers, byte[] body)
+{
+	isProcessing = false;
+	
+	//GD.Print($"Response Code: {responseCode}"); // Add this
+	//GD.Print($"Response Body: {body.GetStringFromUtf8()}"); // Add this
+	
+	if (responseCode == 200)
 	{
-		isProcessing = false;
+		string jsonResponse = body.GetStringFromUtf8();
+		var json = Json.ParseString(jsonResponse).AsGodotDictionary();
 		
-		if (responseCode == 200)
-		{
-			string jsonResponse = body.GetStringFromUtf8();
-			var json = Json.ParseString(jsonResponse).AsGodotDictionary();
-			
-			var choices = json["choices"].AsGodotArray();
-			var firstChoice = choices[0].AsGodotDictionary();
-			var message = firstChoice["message"].AsGodotDictionary();
-			string content = message["content"].AsString();
-			
-			currentCallback?.Invoke(content);
-		}
-		else
-		{
-			GD.PrintErr($"❌ API Error: {responseCode}");
-			currentCallback?.Invoke("Error");
-		}
+		var choices = json["choices"].AsGodotArray();
+		var firstChoice = choices[0].AsGodotDictionary();
+		var message = firstChoice["message"].AsGodotDictionary();
+		string content = message["content"].AsString();
+		
+		currentCallback?.Invoke(content);
 	}
+	else
+	{
+		GD.PrintErr($"❌ API Error: {responseCode}");
+		
+		currentCallback?.Invoke("Error");
+	}
+}
 }
  
