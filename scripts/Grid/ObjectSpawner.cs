@@ -145,6 +145,12 @@ public partial class ObjectSpawner : Node3D
 		AddChild(instance);
 		if (Engine.IsEditorHint())
 			instance.Owner = GetTree().EditedSceneRoot;
+		else
+		{
+			// Register with WorldState
+			var worldState = GetNode<WorldState>("/root/WorldState");
+			worldState.RegisterObject(instance);
+		}
 	}
 	
 	private Vector2I GetRandomGridPosition()

@@ -3,10 +3,10 @@ using System;
 
 public partial class LLMService : Node
 {
-	public string ApiKey { get; set; } = "sk-b650ad0f84f14c4590d5b4d149c8e66f";
-	public string Model { get; set; } = "deepseek-chat";
-	
+	private string ApiKey { get; set; } = "sk-b650ad0f84f14c4590d5b4d149c8e66f";
+	private string Model { get; set; } = "deepseek-chat";
 	private const string API_URL = "https://api.deepseek.com/v1/chat/completions";
+	
 	private HttpRequest httpRequest;
 	private Action<string> currentCallback;
 	private bool isProcessing = false;
@@ -55,9 +55,6 @@ public partial class LLMService : Node
 private void OnRequestCompleted(long result, long responseCode, string[] headers, byte[] body)
 {
 	isProcessing = false;
-	
-	//GD.Print($"Response Code: {responseCode}"); // Add this
-	//GD.Print($"Response Body: {body.GetStringFromUtf8()}"); // Add this
 	
 	if (responseCode == 200)
 	{

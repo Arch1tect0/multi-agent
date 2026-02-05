@@ -76,6 +76,10 @@ public partial class GridGenerator3D : Node3D
 	{
 		if (!Engine.IsEditorHint())
 			GenerateGrid();
+
+		//Register with WorldState
+		var worldState = GetNode<WorldState>("/root/WorldState");
+		worldState.SetGrid(this);
 	}
 	
 	public void GenerateGrid()

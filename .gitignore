@@ -1,3 +1,13 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+
+# Ignore local env files containing secrets
+.env
+
+# Build / IDE files
+bin/
+obj/
+.vs/
+.vscode/
+
