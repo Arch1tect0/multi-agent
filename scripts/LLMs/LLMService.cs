@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 
 public partial class LLMService : Node
 {
@@ -8,8 +9,20 @@ public partial class LLMService : Node
 	private const string API_URL = "https://api.deepseek.com/v1/chat/completions";
 	
 	private HttpRequest httpRequest;
-	private Action<string> currentCallback;
 	private bool isProcessing = false;
+	
+	// Queue system
+	private Queue<QueuedRequest> requestQueue = new Queue<QueuedRequest>();
+	
+	// Store current callback separately (not in metadata)
+	private Action<string> currentCallback;
+	
+	// Helper class to store queued requests
+	private class QueuedRequest
+	{
+		public string Message { get; set; }
+		public Action<string> Callback { get; set; }
+	}
 	
 	public override void _Ready()
 	{
@@ -20,14 +33,35 @@ public partial class LLMService : Node
 	
 	public void SendMessage(string message, Action<string> callback)
 	{
-		if (isProcessing)
+		// Add request to queue
+		requestQueue.Enqueue(new QueuedRequest 
+		{ 
+			Message = message, 
+			Callback = callback 
+		});
+		
+		GD.Print($"📝 Request queued. Queue size: {requestQueue.Count}");
+		
+		// Process next request if not busy
+		ProcessNextRequest();
+	}
+	
+	private void ProcessNextRequest()
+	{
+		// If already processing or queue is empty, return
+		if (isProcessing || requestQueue.Count == 0)
 		{
-			GD.Print("⏳ Already processing...");
 			return;
 		}
 		
+		// Get next request from queue
+		var request = requestQueue.Dequeue();
 		isProcessing = true;
-		currentCallback = callback;
+		
+		// Store callback for this request
+		currentCallback = request.Callback;
+		
+		GD.Print($"🚀 Processing request. Remaining in queue: {requestQueue.Count}");
 		
 		var headers = new string[]
 		{
@@ -43,7 +77,7 @@ public partial class LLMService : Node
 				new Godot.Collections.Dictionary
 				{
 					["role"] = "user",
-					["content"] = message
+					["content"] = request.Message
 				}
 			}
 		};
@@ -52,28 +86,42 @@ public partial class LLMService : Node
 		httpRequest.Request(API_URL, headers, HttpClient.Method.Post, jsonBody);
 	}
 	
-private void OnRequestCompleted(long result, long responseCode, string[] headers, byte[] body)
-{
-	isProcessing = false;
+	private void OnRequestCompleted(long result, long responseCode, string[] headers, byte[] body)
+	{
+		isProcessing = false;
+		
+		if (responseCode == 200)
+		{
+			string jsonResponse = body.GetStringFromUtf8();
+			var json = Json.ParseString(jsonResponse).AsGodotDictionary();
+			
+			var choices = json["choices"].AsGodotArray();
+			var firstChoice = choices[0].AsGodotDictionary();
+			var message = firstChoice["message"].AsGodotDictionary();
+			string content = message["content"].AsString();
+			
+			currentCallback?.Invoke(content);
+		}
+		else
+		{
+			GD.PrintErr($"❌ API Error: {responseCode}");
+			currentCallback?.Invoke("Error");
+		}
+		
+		// Process next request in queue
+		ProcessNextRequest();
+	}
 	
-	if (responseCode == 200)
+	// Optional: Get current queue size
+	public int GetQueueSize()
 	{
-		string jsonResponse = body.GetStringFromUtf8();
-		var json = Json.ParseString(jsonResponse).AsGodotDictionary();
-		
-		var choices = json["choices"].AsGodotArray();
-		var firstChoice = choices[0].AsGodotDictionary();
-		var message = firstChoice["message"].AsGodotDictionary();
-		string content = message["content"].AsString();
-		
-		currentCallback?.Invoke(content);
+		return requestQueue.Count;
 	}
-	else
+	
+	// Optional: Clear the queue
+	public void ClearQueue()
 	{
-		GD.PrintErr($"❌ API Error: {responseCode}");
-		
-		currentCallback?.Invoke("Error");
+		requestQueue.Clear();
+		GD.Print("🗑️ Queue cleared");
 	}
 }
-}
- 
