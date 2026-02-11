@@ -16828,7 +16828,7 @@ script = ExtResource("2_uu6xs")
 ObjectPrefabs = Array[PackedScene]([ExtResource("4_cm0pq")])
 SpawnCount = 5
 GridPath = NodePath("../Grid")
-ObjectScale = Vector3(0.5, 0.5, 0.5)
+ObjectScale = Vector3(0.7, 0.7, 0.7)
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.6258417, 0.7799501, 0, -0.7799501, 0.6258417, 18.992, 12.130535, 40.69653)
