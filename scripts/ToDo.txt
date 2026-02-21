@@ -1,0 +1,35 @@
+1- Add more actions.
+2- Curate Memory file to add inventory and other stuff for the agents.
+3- The collect and other actions should be separated The MAKE DECISION is looking for obj but it shouldn't.
+4- ALL the actions must be modular.
+5- add like a queue for actions for social behavior.
+6- energy and stuff. where to put?
+
+
+
+------------------------------- Design -------------------------------
+Agent
+│
+├── Memory
+│   ├── Inventory
+│   ├── World
+│   ├── Social
+│   └── InternalState (energy, mood, needs)
+│
+├── ActionQueue
+│
+├── Actions (modular)
+  ├── Collect
+  ├── Move
+  ├── SocialAction
+  ├── Craft
+  ├── UseItem
+  └── CustomActions...
+----------------------------------------------------------------------
+Trailer:
+	introduce (who we are(CougAR lab)),
+	tell what agents are and what they do in the enviroment. (collect food, survival skills, social skills)
+	behind the scenes( how everything they are modularly designed, ),
+	the plan: how we can run very large simulations on the server bcz of our design, collect behavioral data, 
+	create better visuals & debugging. Create open access product & platform for everyone.
+	

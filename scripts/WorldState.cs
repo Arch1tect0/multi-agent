@@ -83,13 +83,37 @@ public partial class WorldState : Node
 	{
 		return new List<Node3D>(objects);
 	}
-	
+
+	//See if there's an obj in the grid pos
+	public Node3D GetObjectAtGrid(Vector2I gridPos)
+	{
+		foreach (var obj in objects)
+		{
+			if (WorldToGrid(obj.GlobalPosition) == gridPos)
+				return obj;
+		}
+		return null;
+	}
+
 	// Returns the first registered object, For testing purposes and simplicity
 	public Node3D GetFirstObject()
 	{
 		if (objects.Count > 0)
 			return objects[0];
 		return null;
+	}
+	// Returns a random registered object
+	// Returns a random registered object using Godot's RNG
+	public Node3D GetRandomObject()
+	{
+		if (objects.Count == 0)
+			return null;
+
+		var rng = new RandomNumberGenerator();
+		rng.Randomize();
+
+		int index = rng.RandiRange(0, objects.Count - 1);
+		return objects[index];
 	}
 
 

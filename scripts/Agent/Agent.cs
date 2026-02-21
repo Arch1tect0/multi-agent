@@ -117,7 +117,7 @@ public partial class Agent : Node3D
 		var recentActions = Memory.GetRecentActions();
 		string recentStr = recentActions.Count > 0 ? string.Join(", ", recentActions) : "None";
 
-		var obj = worldState.GetFirstObject();
+		var obj = worldState.GetRandomObject(); // For simplicity, just get a random object to report on. In a real scenario, you'd want to be more specific.	
 		Vector2I currentGrid = worldState.WorldToGrid(GlobalPosition);
 
 		string objectInfo = "No objects found";

@@ -26,28 +26,23 @@ public static class Actions
 
 	public static void Collect(Agent agent, WorldState worldState)
 	{
-		var obj = worldState.GetFirstObject();
+		// Convert agent position to grid
+		Vector2I agentGrid = worldState.WorldToGrid(agent.GlobalPosition);
+
+		// Check if an object exists on this grid cell
+		var obj = worldState.GetObjectAtGrid(agentGrid);
 
 		if (obj == null)
 		{
-			GD.Print("No object to collect!");
+			GD.Print($"No object to collect at {agentGrid}");
 			return;
 		}
 
-		// Check if agent is on the same grid cell as the object
-		Vector2I agentGrid = worldState.WorldToGrid(agent.GlobalPosition);
-		Vector2I objGrid = worldState.WorldToGrid(obj.GlobalPosition);
-
-		if (agentGrid == objGrid)
-		{
-			GD.Print($"Successfully collected object at ({objGrid.X}, {objGrid.Y})!");
-			worldState.UnregisterObject(obj); // This now handles removal too
-		}
-		else
-		{
-			GD.Print($"Too far from object! Agent at ({agentGrid.X}, {agentGrid.Y}), Object at ({objGrid.X}, {objGrid.Y})");
-		}
+		// Collect it
+		GD.Print($"Collected object at {agentGrid}!");
+		worldState.UnregisterObject(obj);
 	}
+
 
 	public static void Idle(Agent agent)
 	{
