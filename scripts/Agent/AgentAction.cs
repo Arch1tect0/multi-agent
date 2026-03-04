@@ -1,8 +1,19 @@
 using Godot;
 using System.Collections.Generic;
 
-public static class Actions
+public static class AgentAction
 {
+
+	public static List<string> GetAvailableActions() // --> this is the list of actions that the LLM can choose from when deciding what to do. Each action corresponds to a method in this class that implements the behavior for that action.
+	{
+		return new List<string>
+	{
+		"Move(x,z): Move to grid coordinates",
+		"Collect(): Collect object at current position",
+		"Idle(): Do nothing",
+		"Die(): Agent dies"
+	};
+	}
 	public static void Move(Agent agent, WorldState worldState, Vector2 target)
 	{
 		Vector2I startGrid = worldState.WorldToGrid(agent.GlobalPosition);
@@ -26,10 +37,7 @@ public static class Actions
 
 	public static void Collect(Agent agent, WorldState worldState)
 	{
-		// Convert agent position to grid
 		Vector2I agentGrid = worldState.WorldToGrid(agent.GlobalPosition);
-
-		// Check if an object exists on this grid cell
 		var obj = worldState.GetObjectAtGrid(agentGrid);
 
 		if (obj == null)
@@ -38,9 +46,9 @@ public static class Actions
 			return;
 		}
 
-		// Collect it
-		GD.Print($"Collected object at {agentGrid}!");
+		agent.Attributes.AddToInventory(obj);  // <-- add to inventory
 		worldState.UnregisterObject(obj);
+		GD.Print($"Collected {obj.Name}! Inventory size: {agent.Attributes.Inventory.Count}");
 	}
 
 
@@ -48,5 +56,15 @@ public static class Actions
 	{
 		GD.Print("Idling...");
 		// Event emission handled in ExecuteAction
+	}
+
+	// the Die action is called from Agent.cs when energy reaches 0, so it doesn't need to be triggered by the LLM. It can be called directly from the Agent class when the condition is met.
+	public static void Die(Agent agent, WorldState worldState)
+	{
+		agent.Attributes.IsAlive = false;
+		agent.Attributes.Energy = 0;
+		GD.Print($"{agent.Name} has died!");
+		worldState.UnregisterAgent(agent);
+		agent.QueueFree();
 	}
 }

@@ -21,8 +21,8 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-LLMService="*res://scripts/LLMs/LLMService.cs"
-WorldState="*res://scripts/WorldState.cs"
+LLMService="*res://scripts/Utils/LLMService.cs"
+WorldState="*res://scripts/Managers/WorldState.cs"
 
 [dotnet]
 

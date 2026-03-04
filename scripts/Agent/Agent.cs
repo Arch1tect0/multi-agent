@@ -1,33 +1,46 @@
 using Godot;
 using System.Collections.Generic;
+using System.Linq;
 
 public partial class Agent : Node3D
 {
-	// Events
+	// ============================================================
+	// SIGNALS
+	// ============================================================
+
 	[Signal]
 	public delegate void ActionCompletedEventHandler(string actionName);
 
 	[Signal]
 	public delegate void ActionStartedEventHandler(string actionName);
 
-	public float MoveSpeed { get; set; } = 2f;
+	// ============================================================
+	// COMPONENTS
+	// ============================================================
 
-	// State
-	public Vector3 Position => GlobalPosition;
-
-	// Components
 	public AgentMemory Memory { get; private set; }
 	private LLMService llmService;
 	private WorldState worldState;
 
-	// Decision making
+	// ============================================================
+	// STATE
+	// ============================================================
+
 	private bool waitingForResponse = false;
 	private bool isActionInProgress = false;
 
-	// Movement
+	// ============================================================
+	// MOVEMENT
+	// ============================================================
+
 	private List<Vector2I> currentPath = new List<Vector2I>();
 	private int pathIndex = 0;
 	private bool isMoving = false;
+
+
+	// ============================================================
+	// GODOT LIFECYCLE
+	// ============================================================
 
 	public override void _Ready()
 	{
@@ -40,44 +53,43 @@ public partial class Agent : Node3D
 		Memory.AddVisitedPosition(Position);
 		worldState.RegisterAgent(this);
 
-		// Connect to our own ActionCompleted event
 		ActionCompleted += OnActionCompleted;
 
-		// Start the decision-making loop
+
+		Attributes.Weight = GD.Randf() * 100f; // random 0-100
+		
+		ApplyColor();
 		MakeDecision();
 	}
 
 	public override void _Process(double delta)
 	{
-		// Handle movement along path
 		if (isMoving)
 		{
 			MoveAlongPath((float)delta);
 		}
 	}
 
+	// ============================================================
+	// MOVEMENT
+	// ============================================================
+
 	private void MoveAlongPath(float delta)
 	{
 		if (pathIndex >= currentPath.Count)
 		{
-			// Reached destination
 			isMoving = false;
 			currentPath.Clear();
 			pathIndex = 0;
 			Memory.AddVisitedPosition(Position);
-			//GD.Print("Reached destination!");
-
-			// Emit completion event
 			EmitSignal(SignalName.ActionCompleted, "Move");
 			return;
 		}
 
-		// Get target position for current waypoint
 		Vector2I targetGrid = currentPath[pathIndex];
 		Vector3 targetWorld = worldState.GridToWorld(targetGrid.X, targetGrid.Y);
 		targetWorld.Y = Position.Y;
 
-		// Move towards target
 		Vector3 direction = (targetWorld - GlobalPosition).Normalized();
 		float distanceToMove = MoveSpeed * delta;
 		float distanceToTarget = GlobalPosition.DistanceTo(targetWorld);
@@ -86,7 +98,6 @@ public partial class Agent : Node3D
 		{
 			GlobalPosition = targetWorld;
 			pathIndex++;
-			//GD.Print($"Reached waypoint {pathIndex}/{currentPath.Count}");
 		}
 		else
 		{
@@ -94,56 +105,80 @@ public partial class Agent : Node3D
 		}
 	}
 
-	private void OnActionCompleted(string actionName)
+	public void SetPath(List<Vector2I> path)
 	{
-		isActionInProgress = false;
-		GD.Print($"Action '{actionName}' completed. Making next decision...");
-
-		// Automatically make next decision when action completes
-		if (!waitingForResponse)
-		{
-			MakeDecision();
-		}
+		currentPath = path;
+		pathIndex = 0;
+		isMoving = true;
 	}
+
+	// ============================================================
+	// DECISION MAKING
+	// ============================================================
 
 	private void MakeDecision()
 	{
+		// Safety net - zero energy is a guaranteed kill
+		if (!Attributes.IsAlive) return;
+		if (Attributes.Energy <= 0)
+		{
+			AgentAction.Die(this, worldState);
+			return;
+		}
+
 		if (isActionInProgress || waitingForResponse)
 		{
 			GD.Print("Already processing an action or waiting for LLM response");
 			return;
 		}
 
-		var recentActions = Memory.GetRecentActions();
-		string recentStr = recentActions.Count > 0 ? string.Join(", ", recentActions) : "None";
-
-		var obj = worldState.GetRandomObject(); // For simplicity, just get a random object to report on. In a real scenario, you'd want to be more specific.	
 		Vector2I currentGrid = worldState.WorldToGrid(GlobalPosition);
 
-		string objectInfo = "No objects found";
-		if (obj != null)
-		{
-			Vector2I objGrid = worldState.WorldToGrid(obj.GlobalPosition);
-			objectInfo = $"Object at grid position ({objGrid.X}, {objGrid.Y})";
-		}
+		string recentActions = Memory.GetRecentActions().Count > 0
+			? string.Join(", ", Memory.GetRecentActions())
+			: "None";
 
-		string prompt = $@"You are an agent in a grid world trying to find and collect an object.
+		string inventoryStr = Attributes.Inventory.Count > 0
+			? string.Join(", ", Attributes.Inventory.Select(o => o.Name))
+			: "Empty";
 
-Current grid position: ({currentGrid.X}, {currentGrid.Y})
-{objectInfo}
-Recent actions: {recentStr}
+		string worldObjects = worldState.GetAllObjects().Count > 0
+			? string.Join("\n", worldState.GetAllObjects().Select(o =>
+				$"- {o.Name} at {worldState.WorldToGrid(o.GlobalPosition)}"))
+			: "None";
+
+		string availableActions = string.Join("\n", AgentAction.GetAvailableActions());
+
+		string prompt = $@"You are an agent in a grid world.
+
+Position: ({currentGrid.X}, {currentGrid.Y})
+Energy: {Attributes.Energy:F0}/{Attributes.MaxEnergy:F0}
+Inventory: {inventoryStr}
+
+Objects in world:
+{worldObjects}
+
+Recent actions: {recentActions}
 
 Available actions:
-- Move(x,z): Move to grid coordinates x,z
-- Collect(): Collect object at current position
-- Idle(): Do nothing
+{availableActions}
 
-Your goal is to reach the object and collect it.
-Respond with ONLY the action. Format: Move(5,3) or Collect() or Idle()
+Respond with ONLY one action. Format: Move(5,3) or Collect() or Idle()
 Your choice:";
 
 		waitingForResponse = true;
 		llmService.SendMessage(prompt, OnLLMResponse);
+	}
+
+	private void OnActionCompleted(string actionName)
+	{
+		isActionInProgress = false;
+		GD.Print($"Action '{actionName}' completed. Making next decision...");
+
+		if (!waitingForResponse)
+		{
+			MakeDecision();
+		}
 	}
 
 	private void OnLLMResponse(string response)
@@ -155,17 +190,13 @@ Your choice:";
 		}
 		else
 		{
-			// On error, make decision again
 			MakeDecision();
 		}
 	}
 
-	public void SetPath(List<Vector2I> path)
-	{
-		currentPath = path;
-		pathIndex = 0;
-		isMoving = true;
-	}
+	// ============================================================
+	// ACTION EXECUTION
+	// ============================================================
 
 	private void ExecuteAction(string actionString)
 	{
@@ -181,29 +212,29 @@ Your choice:";
 			var coords = ParseMoveParams(actionString);
 			if (coords.HasValue)
 			{
-				Actions.Move(this, worldState, coords.Value);
+				AgentAction.Move(this, worldState, coords.Value);
 			}
 			else
 			{
-				// Invalid move parameters, complete immediately
 				EmitSignal(SignalName.ActionCompleted, action);
 			}
 		}
 		else if (action == "Collect")
 		{
-			Actions.Collect(this, worldState);
-			// Collect completes immediately
+			AgentAction.Collect(this, worldState);
 			EmitSignal(SignalName.ActionCompleted, action);
 		}
 		else if (action == "Idle")
 		{
-			Actions.Idle(this);
-			// Idle completes immediately
+			AgentAction.Idle(this);
 			EmitSignal(SignalName.ActionCompleted, action);
+		}
+		else if (action == "Die")
+		{
+			AgentAction.Die(this, worldState);
 		}
 		else
 		{
-			// Unknown action, complete immediately
 			isActionInProgress = false;
 			MakeDecision();
 			return;

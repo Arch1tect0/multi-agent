@@ -1,0 +1,21 @@
+------------------------------- Design -------------------------------
+Agent:    
+  Attributes: [ Inventory | Weight | Energy]                 -- what the agent IS right now
+  Memory:   [ World | InternalState ]                        -- what the agent has DONE over
+  Actions:  [ Move | SocialAction | Craft | Die ]
+
+WorldState:   [ Pathfinding ]
+
+Environment:  [ GridGenerator | ObjectSpawner ]
+
+WorldState ──(read)──> Agent
+Environment ──(populates)──> WorldState
+
+---------------------------To Do-------------------------------------------
+1- Add more actions.
+2- Curate Memory file to add inventory and other stuff for the agents.
+3- The collect and other actions should be separated The MAKE DECISION is looking for obj but it shouldn't.
+4- ALL the actions must be modular.
+5- add like a queue for actions for social behavior.
+6- Add spawining for objects so more food is generated, etc.
+

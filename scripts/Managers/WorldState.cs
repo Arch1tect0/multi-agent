@@ -81,6 +81,7 @@ public partial class WorldState : Node
 
 	public List<Node3D> GetAllObjects()
 	{
+		objects.RemoveAll(o => !IsInstanceValid(o));
 		return new List<Node3D>(objects);
 	}
 
